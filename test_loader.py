@@ -24,18 +24,18 @@ class TestLoader(unittest.TestCase):
         return None
 
     def test_invalid_location(self):
-         """Test that invalid locations appear as rows with NaN values in the DataFrame."""
+        """Test that invalid locations appear as rows with NaN values in the DataFrame."""
 
-         geolocator = get_geolocator()
-         invalid_locations = ["asdfqwer1234", "#####", "1234567890"]
-         df = build_geo_dataframe(geolocator, invalid_locations)
+        geolocator = get_geolocator()
+        invalid_locations = ["asdfqwer1234", "#####", "1234567890"]
+        df = build_geo_dataframe(geolocator, invalid_locations)
          
-         # Ensure DataFrame has the same number of rows as input locations
-         self.assertEqual(len(df), len(invalid_locations))
+        # Ensure DataFrame has the same number of rows as input locations
+        self.assertEqual(len(df), len(invalid_locations))
          
-         # Ensure expected columns exist
-         expected_columns = {"location", "latitude", "longitude", "type"}
-         self.assertTrue(expected_columns.issubset(df.columns))
+        # Ensure expected columns exist
+        expected_columns = {"location", "latitude", "longitude", "type"}
+        self.assertTrue(expected_columns.issubset(df.columns))
 
         # --- Value checks for each row ---
         for idx, row in df.iterrows():
