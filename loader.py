@@ -9,26 +9,53 @@ import pandas as pd
 def get_geolocator(agent='h501-student'):
     """
     Initiate a Nominatim geolocator instance given an `agent`.
-
-    Parameters
-    ----------
-    agent : str, optional
-        Agent name for Nominatim, by default 'h501-student'
     """
     return Nominatim(user_agent=agent)
 
 def fetch_location_data(geolocator, loc):
-    location = geolocator.geocode(loc)
+    """Fetch latitude, longitude, and type for a given location string.
+    """
+    try:
+        location = geolocator.geocode(loc)
 
+    except Exception:
+        return None
+
+    if not location:
+        return None
+    
     if location is None:
         return None
     
-    return {"location": loc, "latitude": location.latitude, "longitude": location.longitude, "type": location.geo_type}
+    return {
+        "location": loc,
+        "latitude": location.latitude,
+        "longitude": location.longitude,
+        "type": getattr(location, 'raw', {}).get('type')
+    }
 
 def build_geo_dataframe(locations):
-    geo_data = [fetch_location_data(geolocator, loc) for loc in locations]
+
+    """Build a pandas DataFrame from a list of location names.
+    """
+    geolocator = get_geolocator()
+    rows = []
     
-    return pd.DataFrame(geo_data)
+    for name in locations:
+        rec = fetch_location_data(geolocator, name)
+       
+        if rec is None:
+            rows.append({
+                "location": name,
+                "latitude": None,
+                "longitude": None,
+                "type": None
+            })
+        else:
+            rows.append(rec)
+
+    return pd.DataFrame.from_records(rows, columns=["location", "latitude", "longitude", "type"])
+
 
 
 if __name__ == "__main__":
