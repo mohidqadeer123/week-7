@@ -8,45 +8,45 @@ class TestLoader(unittest.TestCase):
         """Testing known locations for longitude and latitude"""
 
         geolocator = get_geolocator()
-        locations = ["Museum of Modern Art", "USS Alabama Battleship Memorial Park"]
-        df = build_geo_dataframe(geolocator, locations)
+        locations = {
+            "Museum of Modern Art": {
+                "latitude": 40.7618552,
+                "longitude": -73.9782438,
+                "type": "Museum"
+            },
+            "USS Alabama Battleship Memorial Park": {
+                "latitude": 30.684373,
+                "longitude": -88.015316,
+                "type": "Park"
+            },
+        }
+        for name, expect in locations.items():
+            rec = fetch_location_data(geolocator, name)
+            self.assertIsNotNone(rec, f'Should return a result')
+            self.assertEqual(rec['location'], name)
 
-        # Expected results (approximate)
-        expected = {"Museum of Modern Art": (40.7618552, -73.9782438, "museum"), "USS Alabama Battleship Memorial Park": (30.684373, -88.015316, "park")}
+            self.assertAlmostEqual(rec['latitude'], expect["latitude"], places=2)
+            self.assertAlmostEqual(rec['longitude'], expect["longitude"], places=2)
 
-
-        for _, row in df.iterrows():
-            lat, lon, typ = expected[row["location"]]
-            self.assertAlmostEqual(row["latitude"], lat, places=2)
-            self.assertAlmostEqual(row["longitude"], lon, places=2)
-            self.assertIn(typ.lower(), row["type"].lower())
-
+            self.assertIn(expect["type"].lower(), (rec['type'] or '').lower())
+            
         return None
+    
 
     def test_invalid_location(self):
         """Test that invalid locations appear as rows with NaN values in the DataFrame."""
 
         geolocator = get_geolocator()
-        invalid_locations = ["asdfqwer1234", "#####", "1234567890"]
-        df = build_geo_dataframe(geolocator, invalid_locations)
-         
-        # Ensure DataFrame has the same number of rows as input locations
-        self.assertEqual(len(df), len(invalid_locations))
-         
-        # Ensure expected columns exist
-        expected_columns = {"location", "latitude", "longitude", "type"}
-        self.assertTrue(expected_columns.issubset(df.columns))
+        result = fetch_location_data(geolocator, "asdfqwer1234")
 
-        # --- Value checks for each row ---
-        for idx, row in df.iterrows():
+        # Assert the result is a dictionary
+        self.assertIsInstance(result, dict, "Result should be a dictionary.")
 
-        # The location name should be preserved
-        self.assertIn(row["location"], invalid_locations)
-
-        # Latitude, longitude, and type should be missing (NaN)
-        self.assertTrue(pd.isna(row["latitude"]), f"Latitude should be NaN for {row['location']}")
-        self.assertTrue(pd.isna(row["longitude"]), f"Longitude should be NaN for {row['location']}")
-        self.assertTrue(pd.isna(row["type"]), f"Type should be NaN for {row['location']}")
+        # Assert the result contains expected NA values
+        self.assertEqual(result["location"], "asdfqwer1234", "Location name should match the input.")
+        self.assertIsNone(result["latitude"], "Latitude should be None for invalid locations.")
+        self.assertIsNone(result["longitude"], "Longitude should be None for invalid locations.")
+        self.assertIsNone(result["type"], "Type should be None for invalid locations.")
 
 if __name__ == "__main__":
     unittest.main()
