@@ -1,3 +1,4 @@
+
 '''
 Script to load geographical data into a pandas DataFrame, and save it as a CSV file.
 '''
@@ -9,53 +10,46 @@ import pandas as pd
 def get_geolocator(agent='h501-student'):
     """
     Initiate a Nominatim geolocator instance given an `agent`.
+
+    Parameters
+    ----------
+    agent : str, optional
+        Agent name for Nominatim, by default 'h501-student'
     """
     return Nominatim(user_agent=agent)
 
 def fetch_location_data(geolocator, loc):
-    """Fetch latitude, longitude, and type for a given location string.
+    """
+    Fetch location data (latitude, longitude, type) for a given location.
     """
     try:
         location = geolocator.geocode(loc)
-
-    except Exception:
-        return None
-
-    if not location:
-        return None
-    
-    if location is None:
-        return None
-    
-    return {
-        "location": loc,
-        "latitude": location.latitude,
-        "longitude": location.longitude,
-        "type": getattr(location, 'raw', {}).get('type')
-    }
-
-def build_geo_dataframe(locations):
-
-    """Build a pandas DataFrame from a list of location names.
-    """
-    geolocator = get_geolocator()
-    rows = []
-    
-    for name in locations:
-        rec = fetch_location_data(geolocator, name)
-       
-        if rec is None:
-            rows.append({
-                "location": name,
+        if location is None:
+            return {
+                "location": loc,
                 "latitude": None,
                 "longitude": None,
                 "type": None
-            })
-        else:
-            rows.append(rec)
+            }
 
-    return pd.DataFrame.from_records(rows, columns=["location", "latitude", "longitude", "type"])
-
+        return {
+            "location": loc,
+            "latitude": location.latitude,
+            "longitude": location.longitude,
+            "type": location.raw.get("type", "unknown")
+        }
+    except Exception:
+        return {
+            "location": loc,
+            "latitude": None,
+            "longitude": None,
+            "type": None
+        }
+    
+def build_geo_dataframe(geolocator, locations):
+    geo_data = [fetch_location_data(geolocator, loc) for loc in locations]
+    
+    return pd.DataFrame(geo_data)
 
 
 if __name__ == "__main__":
@@ -63,6 +57,12 @@ if __name__ == "__main__":
 
     locations = ["Museum of Modern Art", "iuyt8765(*&)", "Alaska", "Franklin's Barbecue", "Burj Khalifa"]
 
-    df = build_geo_dataframe(locations)
-
-    df.to_csv("./geo_data.csv")
+    # inserting a try/except to debug and find an error 
+    try:
+        df = build_geo_dataframe(geo, locations)
+        df.to_csv('./geo_data.csv', index=False)
+        print('Geographical data saved to geo_data.csv')
+    
+    # printing the error message if the try code fails
+    except Exception as e:
+        print(f'An error occurred: {e}')
